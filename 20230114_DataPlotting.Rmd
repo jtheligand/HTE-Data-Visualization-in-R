@@ -50,19 +50,19 @@ library(scales)
 hte_data <- read_excel("basictemplate.xlsx", col_names = TRUE, col_types = NULL, sheet = "Plate Summary")
 
 #Enter the names of any columns that you want to generate donut or pie charts of in place of "product_1_yield" and "product_2_yield" below. If it's a donut chart, then only include the values you want to plot on the outside ring. If you're generate a pie chart or a donut chart then you need to calculate the mass balance in Excel and include it in this list.
-data_to_plot <- c("product_1_yield", "product_2_yield")
+data_to_plot <- c("product_1_yield", "product_2_yield", "product_3_yield", "product_4_yield")
 
 #If you want to generate a donut plot with a value in the center, then enter that value in the list below. Note that if you're plotting ee, this will only look good if you take the absolute values first. 
-donut_interior <- c("ee_abs")
+donut_interior <- c("ee_abs", "misc1", "balance")
 
 #Enter the name (singular) of any metric you want to generate a heatmap of below. If you want to generate multiple heatmaps then you will need to generate the first, modify this name, generate the second, and so on and so forth
 data_for_heatmap <- "product_1_yield"
 
 #Set title of the plot by modifying the text between the quotation marks below. To not show a title, delete that text entirely
-plot_title <- "Plot Title"
+plot_title <- ""
 
 #To change the legend labels, modify the values between the quotation marks below and add any additional using the same formatting. These labels will be assigned to the metrics in the same order you listed them in the data_to_plot list.
-plot_labels <- c("Product 1", "Product 2")
+plot_labels <- c("Product 1", "Product 2", "Product 3", "Product 4", "ee", "Minor Enantiomer", "Balance")
 
 #If you want to change the colors that your data will plot with, you can modify the list below to match your colors of choice. These colors will be assigned to the metrics in the same order you listed them in the data_to_plot list.
 cbPalette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -116,6 +116,7 @@ plot_products <- ggplot(working_data_pie, aes(x = "", y = value, fill = fct_inor
 
 #Call the plot so that it will show up in the Plots tab
 plot_products
+ggsave("pie_chart.png", plot = plot_products, width = 11, height = 8.5, units = "in")
 ```
 
 DONUT PLOTS
@@ -159,6 +160,7 @@ plot_donut <- ggplot(working_data_donut, aes(x = x_value, y = value, fill = fct_
 
 #Call the plot so that it shows up in the plot window
 plot_donut
+ggsave("donut_chart.png", plot = plot_donut, width = 11, height = 8.5, units = "in")
 ```
 
 HEAT MAP
@@ -189,6 +191,7 @@ plot_heat <-ggplot(working_data_heatmap) +
 
 #Calls the plot so it will show up on the side
 plot_heat
+ggsave("heatmap_chart.png", plot = plot_heat, width = 11, height = 8.5, units = "in")
 ```
 
 COMPARISON PLOTTING
@@ -210,10 +213,13 @@ plot_compare <- ggplot(hte_data, aes(
   scale_fill_manual(values=cbPalette) +
   geom_boxplot() +
 #  geom_violin() +
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "right", 
+        text = element_text(size = 15))
 
 #Call the plot to for retrieval
 plot_compare
+ggsave("comparison_chart.png", plot = plot_compare, width = 8.5, height = 11, units = "in")
 ```
 
 TROUBLESHOOTING
