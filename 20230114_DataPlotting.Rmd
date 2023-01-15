@@ -1,0 +1,233 @@
+---
+title: "HTE Data Analysis R Notebook"
+output: html_notebook
+---
+
+Notebook assembled by Jessica Sampson. Code for heat map from "96-well plot" by Artur Matysik, https://rpubs.com/artur_matysik/plot-96well-heatmap
+
+Tidied and streamlined as of 20230114
+
+TABLE OF CONTENTS:
+1. INFORMATION
+2. IMPORTING YOUR DATA
+3. GENERATING AND SAVING YOUR PLOTS
+4. BAR OR PIE PLOTS
+5. DONUT PLOTS
+6. HEAT MAP
+7. COMPARISON PLOTS
+8. TROUBLESHOOTING
+9. FINAL THOUGHTS
+
+INFORMATION
+This notebook will help you take raw integration values and/or processed yields and ee's to generate a series of plots of ee, yield, LCAP, or LC area vs. internal standard. While you can generate your figure of merit in R, I would suggest starting by doing it in your original Excel sheet.
+
+Before you continue with running your data processing, use the file manager at the bottom right panel to navigate to the folder where your data is stored. Once there, click the blue gear button labeled "More" and select the option "Set as Working Directory." You should also make sure that you save a copy of this file into the same directory.
+
+IMPORTING YOUR DATA
+If this is your first time using this notebook then you will likely need to install several libraries. RStudio should tell you which libraries you are missing - follow its instructions to make sure they're on your computer.
+
+Import your HTE data below, changing the first portion of the expression that includes read_excel to the name of the file and setting "sheet" equal to the name of whichever sheet you want to plot. If you are using Jessica's Excel template, then copy and paste the data you want to visualize into the "Plate Summary" page. Whichever sheet you import should have columns labeled "col_no" for the corresponding column number on the plate (or the column where you would like that data to be displayed), "row_no" for the row number.
+
+If you have any measures of selectivity (i.e. ee) or any other measurements that you want to plot (i.e. mass balance), then you should do those calculations in Excel before you import the file. If you have groupings of data (like different compound yields you are tracking), then those labels should be on the first line of the sheet. There should not be spaces in any of the column names.
+
+A very basic Excel template is also available that you can use. Just replace the random numbers under "product_1_yield",  "product_2_yield", and "ee" with your data. Then make sure that all your yields or selectivities are labeled on the first row.
+
+Next, enter the names of those column titles in place of "product_1_yield" and "product_2_yield" below and add any additional outputs that you want to plot. If you want to generate a heatmap, then replace "product_1_yield" with your output of interest.
+
+Go through the rest of the box below and make any aesthetic modifications that you want, then press the green arrow at the top right. Pressing this will run all of that code and R will store all the values you told it so it can use them to make the plots.
+
+```{r}
+library(readxl)
+library(forcats)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(rlist)
+library(comprehenr)
+library(ggforce)
+library(scales)
+
+hte_data <- read_excel("basictemplate.xlsx", col_names = TRUE, col_types = NULL, sheet = "Plate Summary")
+
+#Enter the names of any columns that you want to generate donut or pie charts of in place of "product_1_yield" and "product_2_yield" below. If it's a donut chart, then only include the values you want to plot on the outside ring. If you're generate a pie chart or a donut chart then you need to calculate the mass balance in Excel and include it in this list.
+data_to_plot <- c("product_1_yield", "product_2_yield")
+
+#If you want to generate a donut plot with a value in the center, then enter that value in the list below. Note that if you're plotting ee, this will only look good if you take the absolute values first. 
+donut_interior <- c("ee_abs")
+
+#Enter the name (singular) of any metric you want to generate a heatmap of below. If you want to generate multiple heatmaps then you will need to generate the first, modify this name, generate the second, and so on and so forth
+data_for_heatmap <- "product_1_yield"
+
+#Set title of the plot by modifying the text between the quotation marks below. To not show a title, delete that text entirely
+plot_title <- "Plot Title"
+
+#To change the legend labels, modify the values between the quotation marks below and add any additional using the same formatting. These labels will be assigned to the metrics in the same order you listed them in the data_to_plot list.
+plot_labels <- c("Product 1", "Product 2")
+
+#If you want to change the colors that your data will plot with, you can modify the list below to match your colors of choice. These colors will be assigned to the metrics in the same order you listed them in the data_to_plot list.
+cbPalette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+#To set the color that the lowest values and highest will plot with on a heatmap, change the values below:
+min_heatmap <- "white"
+max_heatmap <- "blue"
+
+
+``` 
+
+GENERATING AND SAVING YOUR PLOTS
+For each type of plot there is a header and an ID number, as listed in the Table of Contents. Find that header, go to the code below it and run it by pressing the green arrow at its top right. That should generate a plot below the code. 
+
+Once the code is finished, click on the Console below, press up to call the name of the plot (plot_products for a pie or bar chart, plot_donut for a donut chart, or plot_heat for a heatmap), then press enter. Alternatively, you can just type that label in the Console then press enter. This should bring up the plot in the "Plots" tab at the right - in that tab press "Export", then modify the dimensions of your plot to be the correct resolution and copy it into PowerPoint or save the plot as a PDF or image.
+
+If you don't like the colors your data is using then you can modify cbPalette, min_heatmap, or max_heatmap above. Any other modifications you can think of can also be done by modifying the R code, but you will need to experiment on your own to get them to look the way you want.
+
+BAR OR PIE PLOTS
+To generate a chart of bar graphs, run the code below. If you want a chart of pie graphs, go to the line that starts coord_polar and delete the has mark at the beginning of the line. 
+
+If you want the bars in the bar graph to be next to each other, add the line position = position_dodge() after a comma and before the parenthesis at the end of the geom_bar line.
+```{r}
+#Pivot the data according to the values provided above
+working_data_pie <-  hte_data %>%
+  pivot_longer(cols = data_to_plot)
+
+#Plot the data
+row_labels <- c(`1`="A", `2`="B", `3`="C", `4`="D", `5`="E", `6`="F", `7`="G", `8`="H")
+plot_products <- ggplot(working_data_pie, aes(x = "", y = value, fill = fct_inorder(name))) + 
+  geom_bar(stat = "identity") + 
+#  coord_polar("y", start=0) + #Delete the hash at the beginning of the line for pie charts
+  facet_grid(row_no~col_no, switch = "both") + 
+  scale_fill_manual(values = cbPalette,
+                    labels = plot_labels) + 
+  ggtitle(plot_title) + 
+  theme(legend.position = "bottom", 
+        axis.text = element_blank(), 
+        axis.ticks = element_blank(), 
+        panel.grid = element_blank(), 
+        plot.background = element_blank(), 
+        panel.background = element_blank(),
+        plot.title = element_text(face='bold', hjust = 0.5),
+        strip.text.x = element_text(size = 10),
+        strip.text.y = element_text(size = 10),
+        strip.text.y.left = element_text(angle = 0),
+        strip.background = element_blank(),
+        legend.text = element_text(size = 10)) +
+  guides(fill = guide_legend(title = ""))+
+  labs(x = "", y = "") 
+
+#Call the plot so that it will show up in the Plots tab
+plot_products
+```
+
+DONUT PLOTS
+To generate a set of donut plots, press the green arrow at the top right of the box below.
+
+```{r}
+#Get all values that are to be plotted for pivot
+pivot_list <- list.append(data_to_plot, donut_interior)
+
+#Assign position (interior or exterior) based on which list they belong to
+x_values <- list.append(to_vec(for(x in data_to_plot) 2), to_vec(for(x in donut_interior) 1))
+
+#Pivot the data
+working_data_donut <- hte_data %>%
+  pivot_longer(cols = pivot_list) %>%
+  cbind(x_value = x_values)
+
+#Generate the plot
+plot_donut <- ggplot(working_data_donut, aes(x = x_value, y = value, fill = fct_inorder(name))) + 
+  geom_col() + 
+  coord_polar("y", start=0) +
+  facet_grid(row_no~col_no, switch = "both") + 
+  scale_fill_manual(values = cbPalette,
+                    labels = plot_labels) +
+  ggtitle(plot_title) + 
+  theme(legend.position = "bottom", 
+        axis.text = element_blank(), 
+        axis.ticks = element_blank(), 
+        panel.grid = element_blank(), 
+        plot.background = element_blank(), 
+        panel.background = element_blank(),
+        plot.title = element_text(face='bold', hjust = 0.5),
+        strip.text.x = element_text(size = 10), #Change column label size
+        strip.text.y = element_text(size = 10), #Change row label size
+        strip.background = element_blank(),
+        legend.text = element_text(size = 10), #Change legend size
+        strip.text.y.left = element_text(angle = 0)) +
+  guides(fill = guide_legend(title = ""))+
+  labs(x = "", y = "") +
+  xlim(0.5,2.5)
+
+#Call the plot so that it shows up in the plot window
+plot_donut
+```
+
+HEAT MAP
+Use below to generate a heat plot of ee or another selectivity measure. Save this by using the same procedure as above with the command plot_heat in the command line.
+
+```{r}
+#Pivots the data and then rounds down the data to be plotted to have no decimal places
+working_data_heatmap <- hte_data %>%
+  pivot_longer(cols = data_for_heatmap) %>%
+  mutate(value = round(value,0))
+
+#Plots the data
+plot_heat <-ggplot(working_data_heatmap) + 
+  geom_circle(aes(x0 = col_no, y0 = row_no, r = 0.4, fill = value)) +
+  coord_equal() +
+  scale_x_continuous(breaks = 1:12, expand = expansion(mult = c(0.01, 0.01))) +
+  scale_y_continuous(breaks = 1:8, expand = expansion(mult = c(0.01, 0.01)), labels = LETTERS[1:8], trans = reverse_trans()) +
+  scale_fill_gradient(low = min_heatmap, high = max_heatmap) + 
+  theme_bw() +
+  theme(legend.position = "bottom",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(face='bold', size=20, hjust = 0.5))+
+  guides(fill = guide_legend(title = ""))+
+  labs(title = plot_title,
+       x = "", y = "") +
+  geom_text(aes(x = col_no, y = row_no, label = paste0(value)))
+
+#Calls the plot so it will show up on the side
+plot_heat
+```
+
+COMPARISON PLOTTING
+One thing I find pretty useful for figuring out trends is to plot the spread in the data in terms of one of the axes of variable inputs. To put this more simply, if Li2CO3 was used in four rows and Na2CO3 was used in the remaining four, to generate a box and whisker plot or violin plot showing what the distributions of the two sets of data look like. The code below will let you do that. 
+
+The first step to do that is to make sure that the Excel sheet that you imported contains that variable input. If you use the template "96-well-internalstandard-external.xltx" then the sheet will import your inputs onto the Plate Summary page and you won't need to add them at the end. If you look in the "Plate Summary" sheet then you should see them labeled with v1_column, v2_column, v3_row, and v4_row for the common names that you entered.
+```{r}
+#What input do you want to use to compare your results by?
+variable_column <- "comparison_variable"
+
+#Define what output you want to compare by that variable
+variable_output <- "product_1_yield"
+
+#Plot the data. If you want a violin plot, then add a hash to the line containing geom_boxplot and delete the one at the start of geom_violin
+plot_compare <- ggplot(hte_data, aes(
+                        x = .data[[variable_column]], 
+                        y = .data[[variable_output]], 
+                        fill = .data[[variable_column]])) +
+  scale_fill_manual(values=cbPalette) +
+  geom_boxplot() +
+#  geom_violin() +
+  theme_bw()
+
+#Call the plot to for retrieval
+plot_compare
+```
+
+TROUBLESHOOTING
+1. R is not showing the data that I expect it to!
+    + Go back to your Excel sheet and check the file's name, the sheet name, and the labels on your data
+    + Check that those values are entered precisely in the first section above
+2. My donut plots don't have values in the order I want and look like they're going counterclockwise
+    + R will plot the first thing in the data_to_plot list and then the next and so on and so forth, so the easiest thing to do is just enter everything in reverse order for how you want it to be plotted. This is pretty annoying and you'll need to remember the plot_labels list so that those are in the same order. Unfortunately I can't figure out a good way around this.
+3. My pie or donut charts are have huge empty sections
+    + Double check that none of your values are negative
+4. The row labels on my bar/pie/donut chart are numbers and not A, B, C, etc.
+    + Yeah, sorry, with how ggplot2 handles facet labels this is how it has to be. 
+
+FINAL THOUGHTS
+R is very flexible and there are many more ways of visualizing and sorting through HTE data than what are presented here, but this notebook is designed to give newcomers to R a basic template to use to visualize their data. Additionally, while labels can be added with R, since my own experience is that what those labels are is not generalizable, there's no general column and row relabeling included here. While you can do that in R, it's probably going to be easier to just edit the R output in Powerpoint or Illustrator.
+
+This was tested on random data generated in Excel, so I'm reasonably confident that it should work on actual data, but if you are having problems with getting it to work, then just let me know and we'll try to figure out what's going on. 
