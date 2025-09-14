@@ -7,5 +7,3 @@ For other versions of the notebook and Excel template with detailed instructions
 The heatmap code was generated using the "96-well plot" tutorial from Artur Matysik, which can be found here: https://rpubs.com/artur_matysik/plot-96well-heatmap
 
 Please let me know if this notebook is helpful! Acknowledgements and/or citations of the Excel template and of pie, bar, or donut plots generated using this notebook are greatly appreciated!
-
-Jessica Sampson, January 2023
